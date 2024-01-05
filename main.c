@@ -45,10 +45,10 @@ char** storeLines(char* filename){ // lê o arquivo dado como parâmetro e devol
 
 char*** indexWords(char ** text) { // recebe um array de strings e devolve um array de linhas, onde cada linha é uma array de palavras
     int i,j,k;
-    char*** result = (char***)malloc((sizeof(char**)));
+    char*** result = (char***)malloc(3*sizeof(char**));
     for (i=0; text[i]; i++) {
         char* word = strtok(text[i], " \t");
-        char** words = (char**)malloc(sizeof(char*));
+        char** words = (char**)malloc((sizeof(char*)));
         words[0] = NULL;
         for (j=0; word; j++) {
             words = (char**)realloc(words, (j+2)*sizeof(char*));
@@ -194,7 +194,6 @@ struct lista * indexList(char*** text) {
 int main() {
     char*** text = formatText("test.txt");
     struct lista* data = indexList(text);
-
-    printf("%s %d", data[3].word, data[3].line);
+    printf("%s %d", data[11].word, data[11].line);
     return 0;
 }
