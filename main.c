@@ -51,13 +51,13 @@ char*** indexWords(char ** text) { // recebe um array de strings e devolve um ar
     wordsNum = 0;
     char*** result = (char***)malloc(1);
     for (i=0; text[i]; i++) {
-        char* word = strtok(text[i], " \t");
+        char* word = strtok(text[i], " \t-");
         char** words = (char**)malloc(1*sizeof(char*));
         words[0] = NULL;
         for (j=0; word; j++) {
             words = (char**)realloc(words, (j+2)*sizeof(char*));
             words[j] = strdup(word);
-            word = strtok(NULL, " \t");
+            word = strtok(NULL, " \t-");
         }
         words[j] = NULL;
         result = (char***)realloc(result,(i+2)*sizeof(char**));
