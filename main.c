@@ -362,110 +362,116 @@ struct lista* searchWordTree(Arvore* arvore, char* word, int len) {
 }
 
 
-int main() {
-    char estrutura[255];
-    char nomeArquivo[255];
-    char comando[255];
-    char palavra[255];
-    scanf("%s %s", nomeArquivo, estrutura);
-    char*** text = formatText(nomeArquivo);
-    if (strcmp(estrutura,"lista")==0) {
-        clock_t t;
-        t = clock();
-        struct lista* data = createStructList(text);
-        int len = structListLen(data);
-        t = clock() - t;
-        double tempoConstruir,tempoBusca;
-        tempoConstruir = 1000*((double)t)/CLOCKS_PER_SEC;
-        printf("Tipo de indice: '%s'\n", estrutura);
-        printf("Arquivo texto: '%s'\n", nomeArquivo);
-        printf("Numero de linhas no arquivo: %d\n", linesNum);
-        printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
-        while(1) {
-            printf("> ");
-            scanf("%s",comando);
-            if (strcmp(comando,"fim")==0) {
-                break;
-            }
-            else if (strcmp(comando,"busca")==0) {
-                scanf("%s", palavra);
-                t = clock();
-                char* lowedPalavra = toLowerString(palavra);
-                struct lista* palavrasEncontradas = searchWordList(data, lowedPalavra, len);
-                t = clock() - t; 
-                if (palavrasEncontradas != NULL) {
-                    int ocorrencias = structListLen(palavrasEncontradas);
-                    int* linhas = (int*)malloc(ocorrencias*sizeof(int));
-                    char** lines = storeLines(nomeArquivo);
-                    int i,j;
-                    for (i=0; i<ocorrencias; i++) {
-                        linhas[i] = palavrasEncontradas[i].line;
-                    }
-                    n2sortArray(linhas,ocorrencias);
-                    printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", ocorrencias, palavra);
-                    
-                    printf("%05d: %s\n", linhas[0]+1, lines[linhas[0]]);
-                    for(j=1;j<ocorrencias;j++) {
-                        if(linhas[j]!=linhas[j-1])
-                            printf("%05d: %s\n", linhas[j]+1, lines[linhas[j]]);
-                    }
-                    tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
-                    printf("Tempo de busca: %.4lf ms\n", tempoBusca);
+int main(int argc, char** agrv) {
+    if (argc==3) {
+        char comando[255];
+        char palavra[255];
+        char*** text = formatText(agrv[1]);
+        int printCountOpcaoInvalida = 0;
+        if (strcmp(agrv[2],"lista")==0) {
+            clock_t t;
+            t = clock();
+            struct lista* data = createStructList(text);
+            int len = structListLen(data);
+            t = clock() - t;
+            double tempoConstruir,tempoBusca;
+            tempoConstruir = 1000*((double)t)/CLOCKS_PER_SEC;
+            printf("Tipo de indice: '%s'\n", agrv[2]);
+            printf("Arquivo texto: '%s'\n", agrv[1]);
+            printf("Numero de linhas no arquivo: %d\n", linesNum);
+            printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
+            while(1) {
+                printf("> ");
+                scanf("%s",comando);
+                if (strcmp(comando,"fim")==0) {
+                    break;
                 }
-                else {
-                    printf("Palavra '%s' nao encontrada.\n", palavra);
+                else if (strcmp(comando,"busca")==0) {
+                    printCountOpcaoInvalida=0;
+                    scanf("%s", palavra);
+                    t = clock();
+                    char* lowedPalavra = toLowerString(palavra);
+                    struct lista* palavrasEncontradas = searchWordList(data, lowedPalavra, len);
+                    t = clock() - t; 
+                    if (palavrasEncontradas != NULL) {
+                        int ocorrencias = structListLen(palavrasEncontradas);
+                        int* linhas = (int*)malloc(ocorrencias*sizeof(int));
+                        char** lines = storeLines(agrv[1]);
+                        int i,j;
+                        for (i=0; i<ocorrencias; i++) {
+                            linhas[i] = palavrasEncontradas[i].line;
+                        }
+                        n2sortArray(linhas,ocorrencias);
+                        printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", ocorrencias, palavra);
+                        
+                        printf("%05d: %s\n", linhas[0]+1, lines[linhas[0]]);
+                        for(j=1;j<ocorrencias;j++) {
+                            if(linhas[j]!=linhas[j-1])
+                                printf("%05d: %s\n", linhas[j]+1, lines[linhas[j]]);
+                        }
+                        tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
+                        printf("Tempo de busca: %.4lf ms\n", tempoBusca);
+                    }
+                    else {
+                        printf("Palavra '%s' nao encontrada.\n", palavra);
+                    }
                 }
-            }
-            else {
-                printf("Opcao invalida!\n");
+                else if (printCountOpcaoInvalida==0){
+                    printf("Opcao invalida!\n");
+                    printCountOpcaoInvalida++;
+                }
             }
         }
-    }
-    else if (strcmp(estrutura,"arvore")==0) {
-        clock_t t;
-        t = clock();
-        Arvore* arvore = createStructTree(text);
-        t = clock() - t;
-        double tempoConstruir,tempoBusca;
-        tempoConstruir = 1000*((double)t)/CLOCKS_PER_SEC;
-        printf("Tipo de indice: '%s'\n", estrutura);
-        printf("Arquivo texto: '%s'\n", nomeArquivo);
-        printf("Numero de linhas no arquivo: %d\n", linesNum);
-        printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
-        while(1) {
-            printf("> ");
-            scanf("%s",comando);
-            if (strcmp(comando,"fim")==0) {
-                break;
-            }
-            else if (strcmp(comando,"busca")==0) {
-                scanf("%s", palavra);
-                t = clock();
-                char* lowedPalavra = toLowerString(palavra);
-                No* node = busca_bin(arvore,lowedPalavra);
-                t = clock() - t; 
-                if (node != NULL) {
-                    char** lines = storeLines(nomeArquivo);
-                    int i,j;
-                    n2sortArray(node->lines,node->counter);
-                    printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", node->counter, palavra);
-                    
-                    printf("%05d: %s\n", node->lines[0]+1, lines[node->lines[0]]);
-                    for(j=1;j<node->counter;j++) {
-                        if(node->lines[j]!=node->lines[j-1])
-                            printf("%05d: %s\n", node->lines[j]+1, lines[node->lines[j]]);
+        else if (strcmp(agrv[2],"arvore")==0) {
+            clock_t t;
+            t = clock();
+            Arvore* arvore = createStructTree(text);
+            t = clock() - t;
+            double tempoConstruir,tempoBusca;
+            tempoConstruir = 1000*((double)t)/CLOCKS_PER_SEC;
+            printf("Tipo de indice: '%s'\n", agrv[2]);
+            printf("Arquivo texto: '%s'\n", agrv[1]);
+            printf("Numero de linhas no arquivo: %d\n", linesNum);
+            printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
+            while(1) {
+                printf("> ");
+                scanf("%s",comando);
+                if (strcmp(comando,"fim")==0) {
+                    break;
+                }
+                else if (strcmp(comando,"busca")==0) {
+                    printCountOpcaoInvalida=0;
+                    scanf("%s", palavra);
+                    t = clock();
+                    char* lowedPalavra = toLowerString(palavra);
+                    No* node = busca_bin(arvore,lowedPalavra);
+                    t = clock() - t; 
+                    if (node != NULL) {
+                        char** lines = storeLines(agrv[1]);
+                        int i,j;
+                        n2sortArray(node->lines,node->counter);
+                        printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", node->counter, palavra);
+                        
+                        printf("%05d: %s\n", node->lines[0]+1, lines[node->lines[0]]);
+                        for(j=1;j<node->counter;j++) {
+                            if(node->lines[j]!=node->lines[j-1])
+                                printf("%05d: %s\n", node->lines[j]+1, lines[node->lines[j]]);
+                        }
+                        tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
+                        printf("Tempo de busca: %.4lf ms\n", tempoBusca);
                     }
-                    tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
-                    printf("Tempo de busca: %.4lf ms\n", tempoBusca);
+                    else {
+                        printf("Palavra '%s' nao encontrada.\n", palavra);
+                    }
                 }
-                else {
-                    printf("Palavra '%s' nao encontrada.\n", palavra);
+                else if (printCountOpcaoInvalida==0){
+                    printf("Opcao invalida!\n");
+                    printCountOpcaoInvalida++;
                 }
-            }
-            else {
-                printf("Opcao invalida!\n");
             }
         }
+        return 0;
     }
+    return 1;
 }
 
