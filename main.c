@@ -29,7 +29,7 @@ char** storeLines(char* filename){ // lê o arquivo dado como parâmetro e devol
 
     fseek(fptr, 0,SEEK_SET);
 
-    char** text = (char**) malloc((i*sizeof(char*)));
+    char** text = (char**) malloc(((i+1)*sizeof(char*)));
 
     if (text==NULL) {
         printf("erro ao alocar memória para text\n");
@@ -38,11 +38,12 @@ char** storeLines(char* filename){ // lê o arquivo dado como parâmetro e devol
     int j = 0;
     while ((read = getline(&line, &len, fptr))!=-1) {
         line[strcspn(line,"\n")] = '\0';
-        text[j] = (char*) malloc((max+1)*sizeof(char));
-        strcpy(text[j],line);
+        text[j] = strdup(line);
         j++;
     }
     text[j] = NULL;
+    free(line);
+    fclose(fptr);
     return text;
 }
 
@@ -67,7 +68,9 @@ char*** indexWords(char ** text) { // recebe um array de strings e devolve um ar
             wordsNum++;
         }
         free(words);
+        free(text[i]);
     }
+    free(text);
     result[i] = NULL;
     return result;
 }
@@ -163,18 +166,30 @@ struct lista { //definição de struct lista
 struct lista * createStructList(char*** text) { // cria um array de structs a partir do tipo char*** text
     char** list = createList(text);
     int len = listLength(list);
-    struct lista* data = (struct lista*)malloc(len*sizeof(struct lista));
+    struct lista* data = (struct lista*)malloc((len+1)*sizeof(struct lista));
+    if (data == NULL) {
+        printf("erro em createStructList()\n");
+        exit(EXIT_FAILURE);
+    }
     int i,j,index;
     index = 0;
     for (i=0;text[i]!=NULL;i++) {
         for (j=0;text[i][j]!=NULL;j++) {
             data[index].line = i;
             data[index].word = strdup(list[index]);
-            //free(list[index]);
             index++;
         }
     }
     linesNum = i;
+    for (i=0;text[i]!=NULL;i++) {
+        for (j=0;text[i][j]!=NULL;j++) {
+            free(text[i][j]);
+        }
+        free(text[i]);
+    }
+    free(text);
+    free(list);
+
     data[index].word = NULL;
 
     struct lista aux;
@@ -187,7 +202,6 @@ struct lista * createStructList(char*** text) { // cria um array de structs a pa
             }
         }
     }
-    // free(list);
     return data;
 }
 
@@ -252,17 +266,23 @@ void n2sortArray(int* array,int len) { // ordena um array com complexidade n ao 
 
 char* toLowerString (char* string) { // transforma todos os caracteres de uma string para letra minuscula
     int i;
+    int len = strlen(string);
     char* result = (char*)malloc((strlen(string)+1)*sizeof(char));
-    for (i=0;i<=strlen(string)+1; i++) {
-        result[i] = tolower(string[i]);
+    if (result==NULL) {
+        printf("erro na de alocação em toLowerString()");
+        exit(EXIT_FAILURE);
     }
+    for (i = 0; i < len; i++) {
+        result[i] = tolower((unsigned char)string[i]);
+    }
+    result[len] = '\0';
     return result;
 }
 
 typedef struct no_arvore {
     char* word;
     int counter;
-    int lines[255];
+    int lines[10000];
     struct no_arvore* l;
     struct no_arvore* r;
 } No;
@@ -278,12 +298,15 @@ Arvore* createTree() {
 }
 
 int insert_ord_rec(No* root, No* new, int line) {
+
     if(strcmp(new->word,root->word)==0) {
         root->counter++;
         int i;
-        for(i=0;root->lines[i]!=-1; i++);
+        for(i=0; root->lines[i] != -1; i++);
         root->lines[i] = line;
         root->lines[i+1] = -1;
+        free(new->word);
+        free(new);
         return 0;
     }
     else if (strcmp(new->word,root->word)<0) {
@@ -300,7 +323,7 @@ int insert_ord_rec(No* root, No* new, int line) {
 
 int insert_ord(Arvore* arvore, char* word, int line) {
     No* new = (No*)malloc(sizeof(No));
-    new->word = word;
+    new->word = strdup(word);
     new->l = new->r = NULL;
     new->counter = 1;
     new->lines[0] = line;
@@ -319,7 +342,6 @@ Arvore* createStructTree(char*** text) {
     for (i=0;text[i]!=NULL;i++) {
         for (j=0;text[i][j]!=NULL;j++) {
             insert_ord(arvore,list[index],i);
-            //free(list[index]);
             index++;
         }
     }
@@ -361,13 +383,42 @@ struct lista* searchWordTree(Arvore* arvore, char* word, int len) {
     No* node = busca_bin(arvore, word);
 }
 
+void freeNo(No* node) {
+    if (node) {
+        free(node->word);
+        freeNo(node->l);
+        freeNo(node->r);
+        free(node);
+    }
+}
+
+void freeArvore(Arvore* arvore) {
+    if (arvore) {
+        freeNo(arvore->root);
+        free(arvore);
+    }
+}
+
+void freeStructListaElement(struct lista* element) {
+    free(element->word);
+}
+
+void freeStructListaArray(struct lista* data) {
+    if (data) {
+        for (int i = 0; data[i].word != NULL; i++) {
+            freeStructListaElement(&data[i]);
+        }
+        free(data);
+    }
+}
 
 int main(int argc, char** agrv) {
-    if (argc==3) {
+    if (1) {
+        char input[255];
         char comando[255];
         char palavra[255];
         char*** text = formatText(agrv[1]);
-        int printCountOpcaoInvalida = 0;
+        char** lines = storeLines(agrv[1]);
         if (strcmp(agrv[2],"lista")==0) {
             clock_t t;
             t = clock();
@@ -382,45 +433,51 @@ int main(int argc, char** agrv) {
             printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
             while(1) {
                 printf("> ");
-                scanf("%s",comando);
-                if (strcmp(comando,"fim")==0) {
+                if (fgets(input, sizeof(input), stdin) == NULL) {
                     break;
                 }
-                else if (strcmp(comando,"busca")==0) {
-                    printCountOpcaoInvalida=0;
-                    scanf("%s", palavra);
-                    t = clock();
-                    char* lowedPalavra = toLowerString(palavra);
-                    struct lista* palavrasEncontradas = searchWordList(data, lowedPalavra, len);
-                    t = clock() - t; 
-                    if (palavrasEncontradas != NULL) {
-                        int ocorrencias = structListLen(palavrasEncontradas);
-                        int* linhas = (int*)malloc(ocorrencias*sizeof(int));
-                        char** lines = storeLines(agrv[1]);
-                        int i,j;
-                        for (i=0; i<ocorrencias; i++) {
-                            linhas[i] = palavrasEncontradas[i].line;
+                input[strcspn(input, "\n")] = '\0';
+                if (sscanf(input, "%s %s", comando, palavra) == 2) {
+                    if (strcmp(comando,"busca")==0) {
+                        t = clock();
+                        char* lowedPalavra = toLowerString(palavra);
+                        struct lista* palavrasEncontradas = searchWordList(data, lowedPalavra, len);
+                        t = clock() - t; 
+                        if (palavrasEncontradas != NULL) {
+                            int ocorrencias = structListLen(palavrasEncontradas);
+                            int* linhas = (int*)malloc(ocorrencias*sizeof(int));
+                            int i,j;
+                            for (i=0; i<ocorrencias; i++) {
+                                linhas[i] = palavrasEncontradas[i].line;
+                            }
+                            n2sortArray(linhas,ocorrencias);
+                            printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", ocorrencias, palavra);
+                            
+                            printf("%05d: %s\n", linhas[0]+1, lines[linhas[0]]);
+                            for(j=1;j<ocorrencias;j++) {
+                                if(linhas[j]!=linhas[j-1])
+                                    printf("%05d: %s\n", linhas[j]+1, lines[linhas[j]]);
+                            }
+                            tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
+                            printf("Tempo de busca: %.4lf ms\n", tempoBusca);
                         }
-                        n2sortArray(linhas,ocorrencias);
-                        printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", ocorrencias, palavra);
-                        
-                        printf("%05d: %s\n", linhas[0]+1, lines[linhas[0]]);
-                        for(j=1;j<ocorrencias;j++) {
-                            if(linhas[j]!=linhas[j-1])
-                                printf("%05d: %s\n", linhas[j]+1, lines[linhas[j]]);
+                        else {
+                            printf("Palavra '%s' nao encontrada.\n", palavra);
                         }
-                        tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
-                        printf("Tempo de busca: %.4lf ms\n", tempoBusca);
+                        free(lowedPalavra);
                     }
                     else {
-                        printf("Palavra '%s' nao encontrada.\n", palavra);
+                        printf("Opcao invalida!\n");
                     }
                 }
-                else if (printCountOpcaoInvalida==0){
+                else if (strcmp(comando,"fim")==0) {
+                    break;
+                }
+                else {
                     printf("Opcao invalida!\n");
-                    printCountOpcaoInvalida++;
                 }
             }
+            freeStructListaArray(data);
         }
         else if (strcmp(agrv[2],"arvore")==0) {
             clock_t t;
@@ -435,40 +492,46 @@ int main(int argc, char** agrv) {
             printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
             while(1) {
                 printf("> ");
-                scanf("%s",comando);
-                if (strcmp(comando,"fim")==0) {
+                if (fgets(input, sizeof(input), stdin) == NULL) {
                     break;
                 }
-                else if (strcmp(comando,"busca")==0) {
-                    printCountOpcaoInvalida=0;
-                    scanf("%s", palavra);
-                    t = clock();
-                    char* lowedPalavra = toLowerString(palavra);
-                    No* node = busca_bin(arvore,lowedPalavra);
-                    t = clock() - t; 
-                    if (node != NULL) {
-                        char** lines = storeLines(agrv[1]);
-                        int i,j;
-                        n2sortArray(node->lines,node->counter);
-                        printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", node->counter, palavra);
-                        
-                        printf("%05d: %s\n", node->lines[0]+1, lines[node->lines[0]]);
-                        for(j=1;j<node->counter;j++) {
-                            if(node->lines[j]!=node->lines[j-1])
-                                printf("%05d: %s\n", node->lines[j]+1, lines[node->lines[j]]);
+                input[strcspn(input, "\n")] = '\0';
+                if (sscanf(input, "%s %s", comando, palavra) == 2) {
+                    if (strcmp(comando,"busca")==0) {
+                        t = clock();
+                        char* lowedPalavra = toLowerString(palavra);
+                        No* node = busca_bin(arvore,lowedPalavra);
+                        t = clock() - t; 
+                        if (node != NULL) {
+                            int i,j;
+                            n2sortArray(node->lines,node->counter);
+                            printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", node->counter, palavra);
+                            
+                            printf("%05d: %s\n", node->lines[0]+1, lines[node->lines[0]]);
+                            for(j=1;j<node->counter;j++) {
+                                if(node->lines[j]!=node->lines[j-1])
+                                    printf("%05d: %s\n", node->lines[j]+1, lines[node->lines[j]]);
+                            }
+                            tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
+                            printf("Tempo de busca: %.4lf ms\n", tempoBusca);
                         }
-                        tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
-                        printf("Tempo de busca: %.4lf ms\n", tempoBusca);
+                        else {
+                            printf("Palavra '%s' nao encontrada.\n", palavra);
+                        }
+                        free(lowedPalavra);
                     }
                     else {
-                        printf("Palavra '%s' nao encontrada.\n", palavra);
+                        printf("Opcao invalida!\n");
                     }
                 }
-                else if (printCountOpcaoInvalida==0){
+                else if (strcmp(comando,"fim")==0) {
+                    break;
+                }
+                else {
                     printf("Opcao invalida!\n");
-                    printCountOpcaoInvalida++;
                 }
             }
+            freeArvore(arvore);
         }
         return 0;
     }
