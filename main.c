@@ -5,8 +5,8 @@
 #include <ctype.h>
 #include <time.h>
 
-int linesNum;
-int wordsNum;
+int linesNum; // número de linhas do arquivo texto
+int wordsNum; // número de palavras do arquivo texto
 
 char** storeLines(char* filename){ // lê o arquivo dado como parâmetro e devolve um array de strings, sendo cada string uma linha do texto
     char* line = NULL;
@@ -81,9 +81,8 @@ char*** formatText(char* filename) { // recebe o nome de um arquivo .txt como pa
     return text;
 }
 
-// criar função que organize as palavras em ordem alfabética
 
-char** createList(char*** text) { // cria uma lista de palavras com letras minúsculas
+char** createList(char*** text) { // recebe um arquivo do tipo devolvido pela função formatText() e devolve uma lista de palavras com letras minúsculas
     int i,j,k,l,index;
     int totalWords = 0;
     index = 0;
@@ -128,15 +127,12 @@ int listLength(char** list) { // devolve o tamanho de uma lista de palavras
 }
 
 
-
-
-
 struct lista { //definição de struct lista
     int line;
     char* word;
 };
 
-int partition(struct lista* data, int left, int right) {
+int partition(struct lista* data, int left, int right) { // partition do quicksort para uma lista sequencial de (struct lista), structListSortQuicksort()
     char* pivot = data[right].word;
     int i = left-1;
     struct lista aux;
@@ -162,7 +158,7 @@ int partition(struct lista* data, int left, int right) {
     return i+1;
 }
 
-struct lista* structListSortQuicksort(struct lista* data, int left, int right) {
+struct lista* structListSortQuicksort(struct lista* data, int left, int right) { // quicksort para uma uma lista sequencial de (struct lista)
     if (left<right) {
         int pivot_index = partition(data, left, right);
         structListSortQuicksort(data, left, pivot_index-1);
@@ -171,7 +167,7 @@ struct lista* structListSortQuicksort(struct lista* data, int left, int right) {
     return data;
 }
 
-struct lista * createStructList(char*** text) { // cria um array de structs a partir do tipo char*** text
+struct lista * createStructList(char*** text) { // cria uma lista sequencial de (struct lista) a partir de uma base do tipo gerado pela função formatText() (char text***)
     char** list = createList(text);
     int len = listLength(list);
     struct lista* data = (struct lista*)malloc((len+1)*sizeof(struct lista));
@@ -208,13 +204,13 @@ struct lista * createStructList(char*** text) { // cria um array de structs a pa
 }
 
 
-int structListLen(struct lista* data) { // devolve o tamanho de um "array de structs"
+int structListLen(struct lista* data) { // devolve o tamanho de uma lista sequencial de (struct lista)
     int i;
     for(i = 0; data[i].word; i++);
     return i;
 }
 
-struct lista* searchWordList(struct lista* data, char* word, int len) { //busca binária de uma palavra em um "array de structs"
+struct lista* searchWordList(struct lista* data, char* word, int len) { //busca binária de uma palavra em uma lista sequencial de (struct lista)
     int i, j,k, mid, left, right,check, length;
     check=0;
     left = 0;
@@ -253,26 +249,13 @@ struct lista* searchWordList(struct lista* data, char* word, int len) { //busca 
     return NULL;
 }
 
-void n2sortArray(int* array,int len) { // ordena um array com complexidade n ao quadrado
-    int i,j,aux;
-    for(i=0;i<len;i++) { 
-        for (j = i+1; j<len; j++) {
-            if (array[i]>array[j]) {
-                aux = array[i];
-                array[i] = array[j];
-                array[j] = aux;
-            }
-        }
-    }
-}
-
-void swap(int *a, int *b) {
+void swap(int *a, int *b) { // troca dois inteiros de endereço entre si
     int temp = *a;
     *a = *b;
     *b = temp;
 }
 
-int arrayPartition(int arr[], int left, int right) {
+int arrayPartition(int arr[], int left, int right) { // partition do quicksort de um array de inteiros
     int pivot = arr[right];
     int i = left - 1;
 
@@ -287,7 +270,7 @@ int arrayPartition(int arr[], int left, int right) {
     return i + 1;
 }
 
-void arrayQuicksort(int arr[], int left, int right) {
+void arrayQuicksort(int arr[], int left, int right) { // quicksort array de inteiros
     if (left < right) {
         int pivotIndex = arrayPartition(arr, left, right);
 
@@ -312,7 +295,7 @@ char* toLowerString (char* string) { // transforma todos os caracteres de uma st
     return result;
 }
 
-typedef struct no_arvore {
+typedef struct no_arvore { // definição de nó da árvore
     char* word;
     int counter;
     int lines[1000000];
@@ -320,17 +303,17 @@ typedef struct no_arvore {
     struct no_arvore* r;
 } No;
 
-typedef struct {
+typedef struct {// definição da árvore
     No* root;
 } Arvore;
 
-Arvore* createTree() {
+Arvore* createTree() { // função que cria uma árvore
     Arvore* arvore = (Arvore*)malloc(sizeof(Arvore));
     arvore->root = NULL;
     return arvore; 
 }
 
-int insert_ord_rec(No* root, No* new, int line) {
+int insert_ord_rec(No* root, No* new, int line) { // insere o nó na árvore
 
     if(strcmp(new->word,root->word)==0) {
         root->counter++;
@@ -354,7 +337,7 @@ int insert_ord_rec(No* root, No* new, int line) {
     }
 }
 
-int insert_ord(Arvore* arvore, char* word, int line) {
+int insert_ord(Arvore* arvore, char* word, int line) { // cria um nó e chama função insert_ord_rec() para inserir o nó na árvore
     No* new = (No*)malloc(sizeof(No));
     new->word = strdup(word);
     new->l = new->r = NULL;
@@ -366,7 +349,7 @@ int insert_ord(Arvore* arvore, char* word, int line) {
     return 1;
 }
 
-Arvore* createStructTree(char*** text) {
+Arvore* createStructTree(char*** text) { // cria uma árvore binária e insere todos as palavras do texto formatado fornecido
     Arvore* arvore = createTree();
     char** list = createList(text);
     int len = listLength(list);
@@ -382,7 +365,7 @@ Arvore* createStructTree(char*** text) {
     return arvore;
 }
 
-void imprime_rec(No * node){
+void imprime_rec(No * node) { // função que imprime os nós das árvores 
 	if(node){
 		imprime_rec(node->l);
 		printf(" %s(%d)[%d]\n", node->word,node->counter,node->lines[0]);
@@ -390,14 +373,14 @@ void imprime_rec(No * node){
 	}
 }
 
-void imprime(Arvore * arvore){
+void imprime(Arvore * arvore) { // função que imprime a árvore
 
 	printf("Elementos na arvore:\n");
 	imprime_rec(arvore->root);
 	printf("\n");
 }
 
-No * busca_bin_rec(No * node, char* word){
+No * busca_bin_rec(No * node, char* word) { // função que busca se a palavra está na árvore de forma binária
 
 	if(node){
 		if(strcmp(node->word,word)==0) return node;
@@ -408,15 +391,15 @@ No * busca_bin_rec(No * node, char* word){
 	return NULL;
 }
 
-No * busca_bin(Arvore * arvore, char* word){
+No * busca_bin(Arvore * arvore, char* word) { // função que chama a função busca_bin_rec() para buscar se uma palavra está na árvore
 	return busca_bin_rec(arvore->root, word);	
 }
 
-struct lista* searchWordTree(Arvore* arvore, char* word, int len) {
+struct lista* searchWordTree(Arvore* arvore, char* word, int len) { // função que chama a função searchWordTree() para buscar se uma palavra está na árvore
     No* node = busca_bin(arvore, word);
 }
 
-void freeNo(No* node) {
+void freeNo(No* node) { // função que desaloca o nó de uma árvore
     if (node) {
         free(node->word);
         freeNo(node->l);
@@ -425,18 +408,18 @@ void freeNo(No* node) {
     }
 }
 
-void freeArvore(Arvore* arvore) {
+void freeArvore(Arvore* arvore) { // função que desaloca a árvore
     if (arvore) {
         freeNo(arvore->root);
         free(arvore);
     }
 }
 
-void freeStructListaElement(struct lista* element) {
+void freeStructListaElement(struct lista* element) { // função que desaloca um elemento (struct lista) de uma lista sequencial do tipo (struct lista)
     free(element->word);
 }
 
-void freeStructListaArray(struct lista* data) {
+void freeStructListaArray(struct lista* data) { // função que desaloca a lista sequencial do tipo (struct lista) 
     if (data) {
         for (int i = 0; data[i].word != NULL; i++) {
             freeStructListaElement(&data[i]);
@@ -445,14 +428,14 @@ void freeStructListaArray(struct lista* data) {
     }
 }
 
-int main(int argc, char** agrv) {
-    if (1) {
+int main(int argc, char** argv) {
+    if (argc == 3) {
         char input[255];
         char comando[255];
         char palavra[255];
-        char*** text = formatText(agrv[1]);
-        char** lines = storeLines(agrv[1]);
-        if (strcmp(agrv[2],"lista")==0) {
+        char*** text = formatText(argv[1]);
+        char** lines = storeLines(argv[1]);
+        if (strcmp(argv[2],"lista")==0) {
             clock_t t;
             t = clock();
             struct lista* data = createStructList(text);
@@ -460,8 +443,8 @@ int main(int argc, char** agrv) {
             t = clock() - t;
             double tempoConstruir,tempoBusca;
             tempoConstruir = 1000*((double)t)/CLOCKS_PER_SEC;
-            printf("Tipo de indice: '%s'\n", agrv[2]);
-            printf("Arquivo texto: '%s'\n", agrv[1]);
+            printf("Tipo de indice: '%s'\n", argv[2]);
+            printf("Arquivo texto: '%s'\n", argv[1]);
             printf("Numero de linhas no arquivo: %d\n", linesNum);
             printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
             while(1) {
@@ -514,15 +497,15 @@ int main(int argc, char** agrv) {
             }
             freeStructListaArray(data);
         }
-        else if (strcmp(agrv[2],"arvore")==0) {
+        else if (strcmp(argv[2],"arvore")==0) {
             clock_t t;
             t = clock();
             Arvore* arvore = createStructTree(text);
             t = clock() - t;
             double tempoConstruir,tempoBusca;
             tempoConstruir = 1000*((double)t)/CLOCKS_PER_SEC;
-            printf("Tipo de indice: '%s'\n", agrv[2]);
-            printf("Arquivo texto: '%s'\n", agrv[1]);
+            printf("Tipo de indice: '%s'\n", argv[2]);
+            printf("Arquivo texto: '%s'\n", argv[1]);
             printf("Numero de linhas no arquivo: %d\n", linesNum);
             printf("Tempo para carregar o arquivo e construir o indice: %.4lf ms\n",tempoConstruir);
             while(1) {
@@ -539,7 +522,7 @@ int main(int argc, char** agrv) {
                         t = clock() - t; 
                         if (node != NULL) {
                             int i,j;
-                            n2sortArray(node->lines,node->counter);
+                            arrayQuicksort(node->lines,0,node->counter-1);
                             printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", node->counter, palavra);
                             
                             printf("%05d: %s\n", node->lines[0]+1, lines[node->lines[0]]);
