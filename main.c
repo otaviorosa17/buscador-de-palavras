@@ -129,32 +129,6 @@ int listLength(char** list) { // devolve o tamanho de uma lista de palavras
 
 
 
-/* int partition(char*** list, int left, int right) { tentativa quicksort
-    char* pivot = *list[right];
-    int i = left-1;
-    char* aux;
-    for (int j=left; j<=left-1 ; j++) {
-        if (strcmp(*list[j],pivot)<=0) {
-            i++;
-            aux = *list[i];
-            *list[i] = *list[j];
-            *list[j] = aux;
-        }
-    }
-    aux = *list[i+1];
-    *list[i+1] = *list[right];
-    *list[right] = aux;
-    return i+1;
-}
-
-char** listSortQuicksort(char*** list, int left, int right) {
-    if (left<right) {
-        int pivot_index = partition(list, left, right);
-        listSortQuicksort(list, left, pivot_index-1);
-        listSortQuicksort(list, pivot_index + 1, right);
-    }
-    return *list;
-} */
 
 
 struct lista { //definição de struct lista
@@ -162,6 +136,40 @@ struct lista { //definição de struct lista
     char* word;
 };
 
+int partition(struct lista* data, int left, int right) {
+    char* pivot = data[right].word;
+    int i = left-1;
+    struct lista aux;
+    for (int j=left; j<right ; j++) {
+        if(data[j].word) {
+            if (pivot == NULL || strcmp(data[j].word, pivot) <= 0) {
+                i++;
+                struct lista aux = data[i];
+                data[i] = data[j];
+                data[j] = aux;
+            }
+        }
+        else if (pivot == NULL) {
+            i++;
+            struct lista aux = data[i];
+            data[i] = data[j];
+            data[j] = aux;
+        }
+    }
+    aux = data[i+1];
+    data[i+1] = data[right];
+    data[right] = aux;
+    return i+1;
+}
+
+struct lista* structListSortQuicksort(struct lista* data, int left, int right) {
+    if (left<right) {
+        int pivot_index = partition(data, left, right);
+        structListSortQuicksort(data, left, pivot_index-1);
+        structListSortQuicksort(data, pivot_index + 1, right);
+    }
+    return data;
+}
 
 struct lista * createStructList(char*** text) { // cria um array de structs a partir do tipo char*** text
     char** list = createList(text);
@@ -187,21 +195,15 @@ struct lista * createStructList(char*** text) { // cria um array de structs a pa
         }
         free(text[i]);
     }
+    data[index].word = NULL;
     free(text);
+    for(index=0;index<len;index++) {
+        free(list[index]);
+    }
     free(list);
 
-    data[index].word = NULL;
 
-    struct lista aux;
-    for(i=0;i<len;i++) { 
-        for (j = i+1; j<len; j++) {
-            if (strcmp(data[i].word,data[j].word)>0) {
-                aux = data[i];
-                data[i] = data[j];
-                data[j] = aux;
-            }
-        }
-    }
+    data = structListSortQuicksort(data,0,len);
     return data;
 }
 
@@ -264,6 +266,37 @@ void n2sortArray(int* array,int len) { // ordena um array com complexidade n ao 
     }
 }
 
+void swap(int *a, int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+int arrayPartition(int arr[], int left, int right) {
+    int pivot = arr[right];
+    int i = left - 1;
+
+    for (int j = left; j < right; j++) {
+        if (arr[j] < pivot) {
+            i++;
+            swap(&arr[i], &arr[j]);
+        }
+    }
+
+    swap(&arr[i + 1], &arr[right]);
+    return i + 1;
+}
+
+void arrayQuicksort(int arr[], int left, int right) {
+    if (left < right) {
+        int pivotIndex = arrayPartition(arr, left, right);
+
+        arrayQuicksort(arr, left, pivotIndex - 1);
+        arrayQuicksort(arr, pivotIndex + 1, right);
+    }
+}
+
+
 char* toLowerString (char* string) { // transforma todos os caracteres de uma string para letra minuscula
     int i;
     int len = strlen(string);
@@ -282,7 +315,7 @@ char* toLowerString (char* string) { // transforma todos os caracteres de uma st
 typedef struct no_arvore {
     char* word;
     int counter;
-    int lines[10000];
+    int lines[1000000];
     struct no_arvore* l;
     struct no_arvore* r;
 } No;
@@ -450,7 +483,7 @@ int main(int argc, char** agrv) {
                             for (i=0; i<ocorrencias; i++) {
                                 linhas[i] = palavrasEncontradas[i].line;
                             }
-                            n2sortArray(linhas,ocorrencias);
+                            arrayQuicksort(linhas,0,ocorrencias-1);
                             printf("Existem %d ocorrências da palavra '%s' na(s) seguinte(s) linha(s):\n", ocorrencias, palavra);
                             
                             printf("%05d: %s\n", linhas[0]+1, lines[linhas[0]]);
@@ -460,11 +493,13 @@ int main(int argc, char** agrv) {
                             }
                             tempoBusca = 1000*((double)t)/CLOCKS_PER_SEC;
                             printf("Tempo de busca: %.4lf ms\n", tempoBusca);
+                            free(linhas);
                         }
                         else {
                             printf("Palavra '%s' nao encontrada.\n", palavra);
                         }
                         free(lowedPalavra);
+                        free(palavrasEncontradas);
                     }
                     else {
                         printf("Opcao invalida!\n");
@@ -533,6 +568,10 @@ int main(int argc, char** agrv) {
             }
             freeArvore(arvore);
         }
+        for(int k = 0; k<listLength(lines); k++) {
+            free(lines[k]);
+        }
+        free(lines);
         return 0;
     }
     return 1;
